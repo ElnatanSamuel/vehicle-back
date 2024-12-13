@@ -5,8 +5,15 @@ const Vehicle = require('./models/Vehicle');
 
 const app = express();
 
+const corsOptions = {
+    origin: ['http://localhost:3000', 'https://vehicle-front-iota.vercel.app'],
+    credentials: true,
+    methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
+    allowedHeaders: ['Content-Type', 'Authorization']
+  };
+
 // Basic CORS setup
-app.use(cors());
+app.use(cors(corsOptions));
 
 // Additional headers for all responses
 app.use((req, res, next) => {
