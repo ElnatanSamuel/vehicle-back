@@ -5,76 +5,74 @@ const Vehicle = require('./models/Vehicle');
 
 const app = express();
 
-// Middleware
-app.use(cors({
-    origin: ['http://localhost:3000', 'https://vehicle-front-iota.vercel.app/', 'https://vehicle-front-iota.vercel.app/']
-  }));
-  app.use(express.json());
-const initializeDummyData = async () => {
-    try {
-      const count = await Vehicle.countDocuments();
-      if (count === 0) {
-        const dummyVehicles = [
-          { name: 'Truck 001', status: 'active' },
-          { name: 'Van 102', status: 'maintenance' },
-          { name: 'Delivery Car 203', status: 'active' },
-          { name: 'Heavy Truck 304', status: 'inactive' },
-          { name: 'Pickup 405', status: 'active' }
-        ];
-        await Vehicle.insertMany(dummyVehicles);
-        console.log('Dummy data initialized');
-      }
-    } catch (error) {
-      console.error('Error initializing dummy data:', error);
-    }
-  };
+// Basic CORS setup
+app.use(cors());
 
-mongoose.connect('mongodb+srv://ktk2real:krosection999@cluster0.abfalpl.mongodb.net/internshiptest?retryWrites=true&w=majority').then(() => {
-    console.log('Connected to MongoDB');
-    initializeDummyData();
-  });
+// Additional headers for all responses
+app.use((req, res, next) => {
+  res.header('Access-Control-Allow-Origin', 'https://vehicle-front-iota.vercel.app');
+  res.header('Access-Control-Allow-Headers', 'Origin, X-Requested-With, Content-Type, Accept');
+  res.header('Access-Control-Allow-Credentials', 'true');
+  next();
+});
 
+app.use(express.json());
 
+// Test route
+app.get('/test', (req, res) => {
+  res.json({ message: 'API is working' });
+});
 
 // Routes
 app.get('/api/vehicles', async (req, res) => {
   try {
-    const vehicles = await Vehicle.find().sort({ updatedAt: -1 });
+    await mongoose.connect('mongodb+srv://ktk2real:krosection999@cluster0.abfalpl.mongodb.net/internshiptest?retryWrites=true&w=majority');
+    const vehicles = await Vehicle.find();
     res.json(vehicles);
   } catch (error) {
-    res.status(500).json({ message: error.message });
+    console.error('Error:', error);
+    res.status(500).json({ message: 'Error fetching vehicles', error: error.message });
   }
 });
 
 app.post('/api/vehicles', async (req, res) => {
   try {
-    const vehicle = new Vehicle({
-      name: req.body.name,
-      status: req.body.status || 'active'
-    });
+    await mongoose.connect('mongodb+srv://ktk2real:krosection999@cluster0.abfalpl.mongodb.net/internshiptest?retryWrites=true&w=majority');
+    const vehicle = new Vehicle(req.body);
     const newVehicle = await vehicle.save();
     res.status(201).json(newVehicle);
   } catch (error) {
-    res.status(400).json({ message: error.message });
+    console.error('Error:', error);
+    res.status(400).json({ message: 'Error creating vehicle', error: error.message });
   }
 });
 
 app.put('/api/vehicles/:id', async (req, res) => {
   try {
-    const vehicle = await Vehicle.findById(req.params.id);
-    if (vehicle) {
-      vehicle.status = req.body.status;
-      const updatedVehicle = await vehicle.save();
-      res.json(updatedVehicle);
-    } else {
-      res.status(404).json({ message: 'Vehicle not found' });
+    await mongoose.connect('mongodb+srv://ktk2real:krosection999@cluster0.abfalpl.mongodb.net/internshiptest?retryWrites=true&w=majority');
+    const vehicle = await Vehicle.findByIdAndUpdate(
+      req.params.id,
+      { status: req.body.status },
+      { new: true }
+    );
+    if (!vehicle) {
+      return res.status(404).json({ message: 'Vehicle not found' });
     }
+    res.json(vehicle);
   } catch (error) {
-    res.status(400).json({ message: error.message });
+    console.error('Error:', error);
+    res.status(400).json({ message: 'Error updating vehicle', error: error.message });
   }
 });
 
-const PORT = process.env.PORT || 5000;
-app.listen(PORT, () => {
-  console.log(`Server is running on port ${PORT}`);
-});
+// Handle OPTIONS requests
+app.options('*', cors());
+
+module.exports = app;
+
+if (process.env.NODE_ENV !== 'production') {
+  const port = process.env.PORT || 5000;
+  app.listen(port, () => {
+    console.log(`Server running on port ${port}`);
+  });
+}
