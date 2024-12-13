@@ -6,8 +6,10 @@ const Vehicle = require('./models/Vehicle');
 const app = express();
 
 // Middleware
-app.use(cors());
-app.use(express.json());
+app.use(cors({
+    origin: ['http://localhost:3000', 'https://vehicle-front-iota.vercel.app/', 'https://vehicle-front-iota.vercel.app/']
+  }));
+  app.use(express.json());
 const initializeDummyData = async () => {
     try {
       const count = await Vehicle.countDocuments();
